@@ -1,0 +1,28 @@
+# .github/workflows/switch-check.yml に置く
+# 毎日、FANBOX・Twitch・YouTube の自動連携に切り替えられるようになったかを確認して 🛠️｜運営連絡 にお知らせ
+name: switch-check
+
+on:
+  schedule:
+    - cron: "17 0 * * *"   # 毎日 9:17 JST（UTC 0:17）
+  workflow_dispatch:       # 手動実行ボタン
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python switch_check.py
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+          STAFF_CHANNEL_ID: "1569891241733136524"        # 🛠️｜運営連絡
+          LOG_CHANNEL_ID: "1569891245059211264"          # 🗂️｜ログ
+          MENTION_ROLE_ID: "1569891182425931869"         # 🐈‍⬛ 教授 にメンション
+          TWITCH_LOGIN: "30_desu"
+          YT_CHANNEL_ID: "UCkDjguVqbsJ-iimnwCu6ePg"
