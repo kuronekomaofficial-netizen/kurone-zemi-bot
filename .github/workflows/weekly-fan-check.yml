@@ -18,9 +18,10 @@ jobs:
       - run: python fan_check.py
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-          GUILD_ID: ${{ secrets.GUILD_ID }}
-          REPORT_CHANNEL_ID: ${{ secrets.REPORT_CHANNEL_ID }}
-          SUB_ROLE_IDS: ${{ secrets.SUB_ROLE_IDS }}
-          EXEMPT_ROLE_IDS: ${{ secrets.EXEMPT_ROLE_IDS }}
+          GUILD_ID: "1569883888623288390"
+          REPORT_CHANNEL_ID: "1569891243385819166"       # ✅｜週次チェック
+          LOG_CHANNEL_ID: "1569891245059211264"          # 🗂️｜ログ（手動認証の記録）
+          EXEMPT_ROLE_IDS: "1569891182425931869,1569891185097449485,1569891186330828936"  # 教授, TA, ゲスト講師
+          SUB_ROLE_IDS: ${{ secrets.SUB_ROLE_IDS }}      # 任意（roles.json 以外に継続中とみなすロール）
           GRACE_DAYS: "3"
           KICK_LAPSED: "false"   # 慣れたら true にすると自動キック
