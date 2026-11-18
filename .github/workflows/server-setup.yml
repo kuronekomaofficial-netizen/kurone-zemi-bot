@@ -1,0 +1,35 @@
+# .github/workflows/server-setup.yml に置く
+# Actions タブから手動で実行する（定期実行はしない）
+#   welcome … 受付の案内文（Bot投稿）だけを最新の文面に書き換える（update_welcome.py）
+#   setup   … チャンネルの権限・説明文・並び順を roles.json と setup_server.py の内容に揃える（setup_server.py）
+name: server-setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "welcome＝案内文だけ更新／setup＝権限・説明文・並び順も揃える"
+        type: choice
+        options: [welcome, setup]
+        default: welcome
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python update_welcome.py
+        if: inputs.task == 'welcome'
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          GUILD_ID: "1569883888623288390"
+      - run: python setup_server.py
+        if: inputs.task == 'setup'
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          GUILD_ID: "1569883888623288390"
