@@ -7,7 +7,11 @@
 | `fan_check.py` | 毎週、「どのプランで、どのサイトから来たか」をサイト×プランの人数表と出席簿CSVにして投稿。サブスク系ロールを持たない人も抽出（`KICK_LAPSED=true` でDM→キック） |
 | `roles.json` | 連携で付くロールIDと「サイト×プラン」の対応表。`fan_check.py` と `setup_server.py` の両方が読む |
 | `notify.py` | YouTubeのショート・動画を 🎬｜動画ショート通知 に、YouTubeライブ・Twitchの配信開始を 🔴｜配信通知 に自動投稿 |
-| `.github/workflows/notify.yml` | 5分おきに `notify.py` を自動実行 |
+| `manual_roles.py` | 自動連携が使えるまでのつなぎ。🎫｜支援の確認 の投稿に運営がリアクションするとロールを付けて 🗂️｜ログ に記録 |
+| `switch_check.py` | FANBOX・Twitch・YouTube の自動連携に切り替えられるようになったら 🛠️｜運営連絡 にお知らせ |
+| `dapi.py` | 上の2つが使う Discord API の小さな道具 |
+| `.github/workflows/notify.yml` | 5分おきに `notify.py` と `manual_roles.py` を自動実行 |
+| `.github/workflows/switch-check.yml` | 毎日9時ごろに `switch_check.py` を自動実行 |
 | `.github/workflows/weekly-fan-check.yml` | 毎週月曜10:00(JST)に `fan_check.py` を自動実行 |
 
 ## 手順
@@ -33,7 +37,7 @@ export LAB_ROLE_IDS=...    # 研究室メンバー・特別研究員 / Twitch Ti
 python setup_server.py
 ```
 
-6. 最後に表示される値を GitHub の Secrets に登録: `DISCORD_TOKEN` `GUILD_ID` `REPORT_CHANNEL_ID` `SUB_ROLE_IDS` `EXEMPT_ROLE_IDS`
+6. GitHub の Secrets に `DISCORD_TOKEN` を登録（サーバー・チャンネル・ロールのIDは各 yml に直接書いてあるので Secrets は不要）
 7. Actions タブで `weekly-fan-check` を手動実行して、`✅｜週次チェック` にレポートが届くか確認
 8. 数週間レポートを確認して問題なければ、yml の `KICK_LAPSED` を `"true"` に変更。Bot の管理者権限は外してOK
 
@@ -69,3 +73,32 @@ python setup_server.py
    - 全員の出席簿CSV（表示名・最上位プラン・来たサイト・サイトごとのプラン・状態・参加日）
    が届きます
 4. `setup_server.py` も `roles.json` を読むので、もう一度実行するとプランごとの部屋の権限も揃います（`SUB_ROLE_IDS` などの環境変数は不要になります）
+
+## 自動連携が使えるまでの手動ロール付け（manual_roles.py）
+
+FANBOX（支援者10人から）・Twitch（アフィリエイトから）・YouTube（メンバーシップ開始から）の自動連携が使えるまでのつなぎです。
+
+**ファン**：🎫｜支援の確認 に、支援しているサイトとプランが分かる画面を貼る（ほかの人の投稿は見えないチャンネルです）
+
+**運営（教授・TA）**：その投稿にリアクションを2つ付ける
+| サイト | プラン |
+| --- | --- |
+| 💗 FANBOX | 🎧 聴講生 |
+| ❤️ YouTube | 📝 ゼミ生 |
+| 💜 Twitch | 🔬 研究室メンバー |
+| | 🌟 特別研究員（FANBOXのみ） |
+
+- 5〜15分ほどでBotがロールを付け、🗂️｜ログ に `[認証]` を記録、本人にDMして、投稿を消します
+- ❌ を付けると「確認できませんでした」とDMして投稿を消します
+- 組み合わせがおかしいとき（特別研究員なのにYouTubeなど）は ⚠️ が付きます。リアクションを直してください
+- 支援が終わった人は、🎫｜支援の確認 に `取り消し @その人` と書く → ロールを外して `[取消]` を記録
+- 毎週の出席確認は、この記録を読んで「どのサイトのどのプランか」を数えます（出席簿の「確認方法」が「手動」）
+
+## 自動連携への切り替えのお知らせ（switch_check.py）
+
+毎日、次のどれかを満たしたら 🛠️｜運営連絡 に 🐈‍⬛ 教授 あてでお知らせします（それぞれ1回だけ）
+- FANBOX：手動認証した FANBOX の支援者が10人以上
+- Twitch：30_desu がアフィリエイトになった（`TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` が必要）
+- YouTube：チャンネルに「メンバーになる」ボタンが出た
+
+お知らせには、切り替えの手順も書いてあります。
