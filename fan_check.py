@@ -17,6 +17,7 @@ Bot設定: Developer Portal で「SERVER MEMBERS INTENT」をON、
   EXEMPT_ROLE_IDS  チェック対象外ロール（教授・TA・ゲスト講師など。カンマ区切り）
   SUB_ROLE_IDS     （任意）roles.json 以外にも「継続中」とみなすロール
   ROLES_FILE       （任意）対応表のパス。既定 roles.json
+  LOG_CHANNEL_ID   （任意）🗂️｜ログ。manual_roles.py の手動認証の記録を読み、「どのサイトから来たか」に反映する
 """
 import csv
 import io
@@ -26,6 +27,8 @@ import asyncio
 from datetime import datetime, timezone, timedelta
 
 import discord
+
+import dapi
 
 PLANS = ["聴講生", "ゼミ生", "研究室メンバー", "特別研究員"]  # 下位 → 上位
 SITES = ["FANBOX", "YouTube", "Twitch"]
@@ -65,6 +68,20 @@ def top_plan(site_plans):
     return max(site_plans.values(), key=PLANS.index) if site_plans else None
 
 
+def apply_manual(sp, rec):
+    """手動認証の記録 (サイト, プラン) を反映する。
+    手動のときはプランロールが FANBOX 欄のロールなので、YouTube・Twitch の人は FANBOX から付け替える"""
+    if not rec:
+        return sp
+    site, plan = rec
+    sp = dict(sp)
+    if site != "FANBOX" and sp.get("FANBOX") == plan:
+        del sp["FANBOX"]
+    if site not in sp or PLANS.index(plan) > PLANS.index(sp[site]):
+        sp[site] = plan
+    return sp
+
+
 DM_TEXT = (
     "こんにちは、黒寝こまのファンサーバー「黒寝ゼミ」運営です。\n"
     "YouTubeメンバーシップ / Twitchサブスク / FANBOX支援 のいずれも確認できなかったため、"
@@ -85,6 +102,12 @@ async def run_check(client):
     multi, other_only = 0, 0
     lapsed, waiting = [], []
     roster = []  # 出席簿（CSV）用
+    manual = {}
+    if LOG_CHANNEL_ID:
+        try:
+            manual = dapi.manual_records(LOG_CHANNEL_ID, str(client.user.id))
+        except Exception as e:
+            print(f"⚠️ 手動認証の記録を読めませんでした: {e!r}")
 
     async for m in guild.fetch_members(limit=None):
         if m.bot:
@@ -92,7 +115,8 @@ async def run_check(client):
         ids = {r.id for r in m.roles}
         if ids & EXEMPT_ROLE_IDS:
             continue
-        sp = plans_of(ids, ROLE_MAP)
+        rec = manual.get(str(m.id)) if ids & set(ROLE_MAP) else None  # ロールが外れていれば記録は使わない
+        sp = apply_manual(plans_of(ids, ROLE_MAP), rec)
         for s, p in sp.items():
             table[s][p] += 1
         if sp:
@@ -118,6 +142,7 @@ async def run_check(client):
             "プラン（最上位）": top_plan(sp) or "-",
             "来たサイト": " / ".join(s for s in SITES if s in sp) or "-",
             **{f"{s}のプラン": sp.get(s, "-") for s in SITES},
+            "確認方法": "手動" if rec else ("自動" if sp else "-"),
             "状態": status,
             "参加日": m.joined_at.astimezone(JST).strftime("%Y-%m-%d") if m.joined_at else "",
         })
@@ -182,7 +207,7 @@ async def run_check(client):
 
     # 出席簿CSV（Excelで文字化けしないようにBOM付きUTF-8）。上位プラン → サイト → 参加日 の順
     fields = ["表示名", "ユーザー名", "ユーザーID", "プラン（最上位）", "来たサイト",
-              *[f"{s}のプラン" for s in SITES], "状態", "参加日"]
+              *[f"{s}のプラン" for s in SITES], "確認方法", "状態", "参加日"]
     order = {p: i for i, p in enumerate(reversed(PLANS))}
     buf = io.StringIO()
     w = csv.DictWriter(buf, fieldnames=fields)
@@ -207,6 +232,7 @@ if __name__ == "__main__":
     # どれか1つあれば継続中とみなすロール ＝ roles.json の全ロール ＋ SUB_ROLE_IDS
     SUB_ROLE_IDS = set(ROLE_MAP) | _ids("SUB_ROLE_IDS")
     EXEMPT_ROLE_IDS = _ids("EXEMPT_ROLE_IDS")
+    LOG_CHANNEL_ID = os.environ.get("LOG_CHANNEL_ID", "")
     GRACE_DAYS = int(os.environ.get("GRACE_DAYS", "3"))
     KICK_LAPSED = os.environ.get("KICK_LAPSED", "false").lower() == "true"
 
