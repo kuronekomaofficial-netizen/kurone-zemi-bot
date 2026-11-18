@@ -67,6 +67,7 @@ LAYOUT = [
         ("text", "🖤", "ようこそ", True, "🖤 まずはここから！"),
         ("text", "📜", "ルール", True, "📜 ゼミの約束ごと"),
         ("text", "🔗", "ロール連携のしかた", True, "🔗 連携しないと、毎週月曜の確認のときに自動で退出になります"),
+        ("text", "🎫", "支援の確認", False, "🎫 支援したら、支援しているサイトとプランが分かる画面をここに貼ってね（投稿は確認後に自動で消えます）"),
     ]),
     ("📣 掲示板", "sub", [
         ("text", "📣", "お知らせ", True, "📢 こまからのお知らせ"),
@@ -202,6 +203,8 @@ WELCOME = {
         "⚠️ **参加から3日たっても連携が確認できない場合は、毎週月曜の確認のときに自動で退出になります**\n"
         "🔄 サブスクが終了したときも、週1回の確認のあとに退出となります。"
         "再開したら、いつでも戻ってきてくださいね🐈‍⬛\n\n"
+        "📮 **自動の連携がまだ使えないあいだ**は、<#支援の確認> に、支援しているサイトとプランが分かる画面を貼ってください。"
+        "運営が確認してロールを付けます（送った画面は確認後に消えます。本名などは隠してね）\n\n"
         "-# 困ったときは、🖤 TAまでどうぞ💤"
     ),
 }
@@ -218,7 +221,7 @@ async def ensure_role(g, name, color, perms):
                                hoist=True, mentionable=False), True
 
 
-def build_overwrites(g, level, ro, roles):
+def build_overwrites(g, level, ro, roles, name_hint=None):
     def get(ids):
         return [g.get_role(i) for i in ids if g.get_role(i)]
 
@@ -229,6 +232,13 @@ def build_overwrites(g, level, ro, roles):
     ta, guest, me = roles[R_TA], roles[R_GUEST], g.me.top_role
 
     ow = {}
+    if name_hint == "支援の確認":  # 誰でも送れるが、過去の投稿（ほかの人の支援画面）は運営しか見られない
+        ow[g.default_role] = PO(view_channel=True, send_messages=True, attach_files=True,
+                                read_message_history=False, add_reactions=False)
+        ow[ta] = PO(view_channel=True, send_messages=True, read_message_history=True, add_reactions=True)
+        ow[me] = PO(view_channel=True, send_messages=True, read_message_history=True,
+                    manage_messages=True, add_reactions=True)
+        return ow
     if level == "public":
         ow[g.default_role] = PO(view_channel=True, send_messages=False if ro else None,
                                 add_reactions=True)
@@ -275,7 +285,7 @@ async def setup():
 
         for kind, emoji, name, ro, topic in channels:
             full = f"{emoji}｜{name}"
-            ow = build_overwrites(g, level, ro, roles)
+            ow = build_overwrites(g, level, ro, roles, name)
             ch = discord.utils.get(cat.channels, name=full)
             if ch:
                 if kind == "text" and topic:
