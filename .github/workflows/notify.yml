@@ -1,0 +1,33 @@
+# .github/workflows/notify.yml に置く
+name: notify
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # 5分おき（GitHubの混み具合で数分遅れることがあります）
+  workflow_dispatch:         # 手動実行ボタン
+
+concurrency:
+  group: notify              # 前の実行が終わる前に次が始まらないようにする
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python notify.py
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          YT_API_KEY: ${{ secrets.YT_API_KEY }}
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+          YT_CHANNEL_ID: "UCkDjguVqbsJ-iimnwCu6ePg"     # YouTube @黒寝こま
+          TWITCH_LOGIN: "30_desu"
+          VIDEO_CHANNEL_ID: "1569891198242398298"        # 🎬｜動画ショート通知
+          LIVE_CHANNEL_ID: "1572585271067676773"         # 🔴｜配信通知
+          LIVE_MENTION: ""                               # 例: everyone / ロールID（空ならメンションなし）
+          MAX_AGE_HOURS: "12"
