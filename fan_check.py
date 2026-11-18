@@ -32,7 +32,7 @@ import dapi
 
 PLANS = ["聴講生", "ゼミ生", "研究室メンバー", "特別研究員"]  # 下位 → 上位
 SITES = ["FANBOX", "YouTube", "Twitch"]
-SITE_ICON = {"FANBOX": "💗", "YouTube": "❤️", "Twitch": "💜"}
+SITE_ICON = {"FANBOX": "💛", "YouTube": "❤", "Twitch": "💜"}
 
 
 def _ids(key):
