@@ -4,7 +4,7 @@
 使い方（運営）
   1. ファンが 🎫｜支援の確認 に「支援しているサイトとプランが分かる画面」を貼る
   2. 運営（教授・TA）がその投稿にリアクションを2つ付ける
-       サイト：💗 FANBOX ／ ❤️ YouTube ／ 💜 Twitch
+       サイト：💛 FANBOX ／ ❤ YouTube ／ 💜 Twitch
        プラン：🎧 聴講生 ／ 📝 ゼミ生 ／ 🔬 研究室メンバー ／ 🌟 特別研究員（FANBOXのみ）
      → 数分以内にBotがロールを付け、🗂️｜ログ に記録し、本人にDMして、投稿を消す
      ❌ を付けると「確認できませんでした」とDMして投稿を消す（ロールは付けない）
@@ -22,7 +22,7 @@ import dapi
 from dapi import api, norm_emoji, q
 
 PLANS = ["聴講生", "ゼミ生", "研究室メンバー", "特別研究員"]
-SITE_EMOJI = {"💗": "FANBOX", "❤": "YouTube", "💜": "Twitch"}
+SITE_EMOJI = {"💛": "FANBOX", "❤": "YouTube", "💜": "Twitch"}
 PLAN_EMOJI = {"🎧": "聴講生", "📝": "ゼミ生", "🔬": "研究室メンバー", "🌟": "特別研究員"}
 REJECT_EMOJI = "❌"
 JST = timezone(timedelta(hours=9))
