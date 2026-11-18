@@ -37,6 +37,19 @@ ZEMI_ROLE_IDS = _ids("ZEMI_ROLE_IDS")
 LAB_ROLE_IDS = _ids("LAB_ROLE_IDS")
 FELLOW_ROLE_IDS = _ids("FELLOW_ROLE_IDS")
 
+# roles.json（サイト×プランの対応表。fan_check.py と共通）があれば、そこのロールも各プランに加える
+_ROLES_FILE = os.environ.get("ROLES_FILE", os.path.join(os.path.dirname(os.path.abspath(__file__)), "roles.json"))
+if os.path.exists(_ROLES_FILE):
+    import json
+    with open(_ROLES_FILE, encoding="utf-8") as _f:
+        _raw = json.load(_f)
+    _by_plan = {"聴講生": SUB_ROLE_IDS, "ゼミ生": ZEMI_ROLE_IDS,
+                "研究室メンバー": LAB_ROLE_IDS, "特別研究員": FELLOW_ROLE_IDS}
+    for _site in ("FANBOX", "YouTube", "Twitch"):
+        for _plan, _ids_list in (_raw.get(_site) or {}).items():
+            if _plan in _by_plan:
+                _by_plan[_plan] += [int(x) for x in _ids_list if int(x) not in _by_plan[_plan]]
+
 STAFF_ROLES = {
     "🐈‍⬛ 教授": (0xFF2D7D, discord.Permissions(administrator=True)),  # こま本人
     "🖤 TA": (0x00C7B7, discord.Permissions(
