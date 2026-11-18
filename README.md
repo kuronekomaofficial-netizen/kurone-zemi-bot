@@ -4,7 +4,8 @@
 | --- | --- |
 | `setup_server.py` | ロール・カテゴリ・チャンネル・権限を一括作成し、受付3チャンネルに案内文を投稿（何度実行してもOK） |
 | `update_welcome.py` | 受付3チャンネルの案内文（Bot投稿）だけを `setup_server.py` の最新文面に書き換える。権限・チャンネルには触らない |
-| `fan_check.py` | 毎週、サブスク系ロールを持たない人を抽出してレポート投稿（`KICK_LAPSED=true` でDM→キック） |
+| `fan_check.py` | 毎週、「どのプランで、どのサイトから来たか」をサイト×プランの人数表と出席簿CSVにして投稿。サブスク系ロールを持たない人も抽出（`KICK_LAPSED=true` でDM→キック） |
+| `roles.json` | 連携で付くロールIDと「サイト×プラン」の対応表。`fan_check.py` と `setup_server.py` の両方が読む |
 | `notify.py` | YouTubeのショート・動画を 🎬｜動画ショート通知 に、YouTubeライブ・Twitchの配信開始を 🔴｜配信通知 に自動投稿 |
 | `.github/workflows/notify.yml` | 5分おきに `notify.py` を自動実行 |
 | `.github/workflows/weekly-fan-check.yml` | 毎週月曜10:00(JST)に `fan_check.py` を自動実行 |
@@ -56,3 +57,15 @@ python setup_server.py
 - Bot が 🎬・🔴 のチャンネルで「メッセージを見る・送信・埋め込みリンク・メッセージ履歴を読む」をできる必要があります（Botの管理者権限を外した場合は確認）
 - 配信開始のメンションは `notify.yml` の `LIVE_MENTION`（`everyone` かロールID）
 - 公開リポジトリは60日間更新がないと定期実行が止まります。止まったら Actions タブから再開
+
+## 出席確認（プラン・サイトの管理）
+
+1. FANBOX・YouTube・Twitch をサーバーと連携すると、それぞれロールができます
+2. サーバー設定 → ロール → ロールを右クリック →「ロールIDをコピー」で、各ロールのIDを `roles.json` の「サイト → プラン」の欄に入れる
+   - 例：Twitch の Tier1 ロール → `"Twitch": {"聴講生": [ロールID]}`
+3. `roles.json` を GitHub に上げれば、次の月曜から ✅｜週次チェック に
+   - サイト別（FANBOX / YouTube / Twitch）のプラン人数
+   - プラン別の人数（複数サイトから入っている人は一番上のプランで1回）
+   - 全員の出席簿CSV（表示名・最上位プラン・来たサイト・サイトごとのプラン・状態・参加日）
+   が届きます
+4. `setup_server.py` も `roles.json` を読むので、もう一度実行するとプランごとの部屋の権限も揃います（`SUB_ROLE_IDS` などの環境変数は不要になります）
