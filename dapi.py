@@ -82,3 +82,26 @@ def manual_records(log_channel_id, bot_id):
         for kind, uid, site, plan in RECORD_RE.findall(m.get("content", "")):
             recs[uid] = (site, plan) if kind == "認証" else None
     return recs
+
+
+SYNC_RE = re.compile(r"\[(同期付与|同期解除|認証|取消)\][^\n]*?uid=(\d+)(?:[^\n]*?role=(\d+))?")
+
+
+def parse_sync(contents):
+    """ログ本文（古い順）から、sync_roles.py が付けて今も有効なプランロール {(uid, role_id)} を求める。
+    手動認証・取消（[認証]/[取消]）があった人は、その時点で手動の管理に切り替わったとみなして記録を消す"""
+    active = set()
+    for text in contents:
+        for kind, uid, rid in SYNC_RE.findall(text or ""):
+            if kind == "同期付与" and rid:
+                active.add((uid, rid))
+            elif kind == "同期解除" and rid:
+                active.discard((uid, rid))
+            elif kind in ("認証", "取消"):
+                active = {x for x in active if x[0] != uid}
+    return active
+
+
+def sync_grants(log_channel_id, bot_id):
+    msgs = [m for m in reversed(history(log_channel_id)) if m["author"]["id"] == bot_id]
+    return parse_sync(m.get("content", "") for m in msgs)
