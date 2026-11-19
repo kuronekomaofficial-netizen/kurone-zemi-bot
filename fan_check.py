@@ -102,12 +102,13 @@ async def run_check(client):
     multi, other_only = 0, 0
     lapsed, waiting = [], []
     roster = []  # 出席簿（CSV）用
-    manual = {}
+    manual, synced = {}, set()
     if LOG_CHANNEL_ID:
         try:
             manual = dapi.manual_records(LOG_CHANNEL_ID, str(client.user.id))
+            synced = dapi.sync_grants(LOG_CHANNEL_ID, str(client.user.id))
         except Exception as e:
-            print(f"⚠️ 手動認証の記録を読めませんでした: {e!r}")
+            print(f"⚠️ 手動認証・同期の記録を読めませんでした: {e!r}")
 
     async for m in guild.fetch_members(limit=None):
         if m.bot:
@@ -116,7 +117,9 @@ async def run_check(client):
         if ids & EXEMPT_ROLE_IDS:
             continue
         rec = manual.get(str(m.id)) if ids & set(ROLE_MAP) else None  # ロールが外れていれば記録は使わない
-        sp = apply_manual(plans_of(ids, ROLE_MAP), rec)
+        # sync_roles.py が Twitch/YouTube 連携から付けたプランロールは、FANBOX としては数えない
+        own = ids - {int(r) for (u, r) in synced if u == str(m.id)}
+        sp = apply_manual(plans_of(own, ROLE_MAP), rec)
         for s, p in sp.items():
             table[s][p] += 1
         if sp:
