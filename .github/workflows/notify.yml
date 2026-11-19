@@ -1,5 +1,5 @@
 # .github/workflows/notify.yml に置く
-# 5分おきに「YouTube/Twitchの通知」と「🎫｜支援の確認 の手動ロール付け」を実行
+# 5分おきに「YouTube/Twitchの通知」「🎫｜支援の確認 の手動ロール付け」「連携ロールの同期」を実行
 name: notify
 
 on:
@@ -40,3 +40,9 @@ jobs:
           APPLY_CHANNEL_ID: "1572596649912696892"        # 🎫｜支援の確認
           LOG_CHANNEL_ID: "1569891245059211264"          # 🗂️｜ログ
           STAFF_ROLE_IDS: "1569891182425931869,1569891185097449485"   # 🐈‍⬛ 教授, 🖤 TA
+      - run: python sync_roles.py
+        if: always()               # 💜1⃣ などの連携ロール → 🎧 聴講生 などのプランロール
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          GUILD_ID: "1569883888623288390"
+          LOG_CHANNEL_ID: "1569891245059211264"          # 🗂️｜ログ
